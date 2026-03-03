@@ -308,7 +308,7 @@ body.keyboard-visible #main-content {
   line-height: 1.2;
   margin-bottom: 8px;
   white-space: pre;
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 @media (max-width: 600px) {

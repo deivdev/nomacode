@@ -999,7 +999,7 @@ class Nomacode {
     ).join('');
 
     // Build unavailable tools with install buttons (exclude coming soon tools)
-    const comingSoonIds = ['opencode', 'codex'];
+    const comingSoonIds = ['codex'];
     let unavailableHint = '';
     const installableTools = (this.tools?.unavailable || []).filter(t => !comingSoonIds.includes(t.id));
     if (installableTools.length > 0) {
