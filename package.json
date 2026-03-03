@@ -1,6 +1,6 @@
 {
   "name": "nomacode",
-  "version": "2026.2.2",
+  "version": "2026.3.1",
   "description": "Mobile-first web UI for running AI coding assistants on Android via Termux",
   "main": "server/index.js",
   "bin": {
