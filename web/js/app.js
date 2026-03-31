@@ -1719,29 +1719,46 @@ class Nomacode {
     const toolbar = document.getElementById('key-toolbar');
     if (!toolbar) return;
 
-    toolbar.querySelectorAll('.key-btn').forEach(btn => {
-      // Use touchstart to prevent keyboard from closing on mobile
-      const handler = e => {
-        e.preventDefault();
-        e.stopPropagation();
+    const SWIPE_THRESHOLD = 10;
 
+    toolbar.querySelectorAll('.key-btn').forEach(btn => {
+      let touchStartX = null;
+
+      const activate = () => {
         if (btn.dataset.modifier) {
-          // Toggle modifier key
           this.toggleModifier(btn.dataset.modifier);
         } else if (btn.dataset.key) {
-          // Send key to terminal
           this.sendKey(btn.dataset.key);
         }
 
-        // Refocus terminal to keep keyboard open
         const terminal = this.terminals.get(this.activeSessionId);
         if (terminal?.term) {
           terminal.term.focus();
         }
       };
 
-      btn.addEventListener('touchstart', handler, { passive: false });
-      btn.addEventListener('mousedown', handler); // Fallback for non-touch
+      // Prevent keyboard from closing on touch, but don't activate yet
+      btn.addEventListener('touchstart', e => {
+        e.preventDefault();
+        touchStartX = e.touches[0].clientX;
+      }, { passive: false });
+
+      // Only activate if the touch didn't move (not a swipe/scroll)
+      btn.addEventListener('touchend', e => {
+        if (touchStartX !== null) {
+          const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
+          if (dx < SWIPE_THRESHOLD) {
+            activate();
+          }
+        }
+        touchStartX = null;
+      });
+
+      btn.addEventListener('mousedown', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        activate();
+      });
     });
   }
 
