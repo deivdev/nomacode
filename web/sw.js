@@ -1,6 +1,6 @@
 // Service Worker for Nomacode PWA
 // Bump on every shipped asset change so clients don't serve stale JS/CSS.
-const CACHE_NAME = 'nomacode-v3';
+const CACHE_NAME = 'nomacode-v4';
 
 // Assets to cache for offline use
 const STATIC_ASSETS = [

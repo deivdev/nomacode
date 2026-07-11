@@ -294,12 +294,16 @@ body.keyboard-visible #main-content {
   align-items: center;
   justify-content: center;
   background: var(--bg);
+  /* Never let a wide child (long titles, ascii logo) scroll the page sideways. */
+  overflow-x: hidden;
 }
 
 .welcome-content {
   text-align: center;
+  width: 100%;
   max-width: 600px;
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .ascii-logo {
