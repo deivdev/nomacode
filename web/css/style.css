@@ -419,6 +419,9 @@ body.keyboard-visible #main-content {
   flex-shrink: 0;
 }
 .recent-item .repo-name {
+  /* min-width:0 lets a flex child shrink below its content width so a long
+     conversation title ellipsizes instead of overflowing the viewport. */
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
