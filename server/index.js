@@ -86,6 +86,14 @@ server.listen(PORT, '127.0.0.1', () => {
 └─────────────────────────────────────────┘
 `);
 
+  // Reattach to any tool sessions that survived a previous server restart
+  // (tmux durability layer in pty-manager). Best-effort; never blocks startup.
+  try {
+    require('./services/pty-manager').reviveSessions();
+  } catch (e) {
+    console.error('[index] reviveSessions failed:', e.message);
+  }
+
   // Auto-open browser if enabled
   if (process.env.AUTO_OPEN === '1') {
     setTimeout(() => openBrowser(`http://localhost:${PORT}`), 500);
