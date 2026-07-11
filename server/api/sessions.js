@@ -5,6 +5,7 @@ const ptyManager = require('../services/pty-manager');
 const repoManager = require('../services/repo-manager');
 const toolDetector = require('../services/tool-detector');
 const { resolveProfileEnv } = require('./profiles');
+const conversations = require('../services/conversations');
 
 // List all sessions
 router.get('/', (req, res) => {
@@ -16,10 +17,22 @@ router.get('/', (req, res) => {
   }
 });
 
+// List past Claude conversations (resumable via `claude --resume <id>`).
+// Must be declared before GET '/:id' so it isn't swallowed as an id.
+router.get('/conversations', (req, res) => {
+  try {
+    // Don't offer to resume a conversation that's already live in a session.
+    const live = ptyManager.getAllSessions().map(s => s.id);
+    res.json(conversations.listConversations({ excludeIds: live }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Create new session
 router.post('/', (req, res) => {
   try {
-    const { repoId, tool, cols, rows, profileId } = req.body;
+    const { repoId, tool, cols, rows, profileId, resumeId, cwd: resumeCwd } = req.body;
 
     // Validate tool exists in our list (but skip slow availability re-check)
     // The frontend already shows only available tools, and if the tool
@@ -54,6 +67,18 @@ router.post('/', (req, res) => {
       }
     }
 
+    // Resuming a past Claude conversation: launch `claude --resume <id>` from
+    // the conversation's original cwd (Claude keys history by cwd, so it must
+    // match or the session won't be found).
+    let extraArgs = null;
+    if (resumeId) {
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resumeId)) {
+        return res.status(400).json({ error: 'Invalid resumeId' });
+      }
+      extraArgs = ['--resume', resumeId];
+      if (typeof resumeCwd === 'string' && resumeCwd) cwd = resumeCwd;
+    }
+
     // Create session
     const sessionId = uuidv4();
     const session = ptyManager.createSession(sessionId, {
@@ -62,7 +87,8 @@ router.post('/', (req, res) => {
       cols: cols || 80,
       rows: rows || 24,
       env: profileEnv,
-      profileId: profileId || null
+      profileId: profileId || null,
+      args: extraArgs
     });
 
     res.status(201).json({

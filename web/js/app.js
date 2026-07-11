@@ -893,6 +893,49 @@ class Nomacode {
     this.updateClaudeModeDisplay();
     this.renderTabs();
     this.updateStatusBar();
+    this.updateRecentConversations();
+  }
+
+  // Populate the "Resume Conversation" list from past Claude sessions on disk.
+  async updateRecentConversations() {
+    const section = document.getElementById('recent-convos');
+    const list = document.getElementById('convo-list');
+    if (!section || !list) return;
+
+    let convos = [];
+    try { convos = await API.sessions.conversations(); } catch (e) { /* offline: hide */ }
+
+    if (!convos.length) {
+      section.classList.add('hidden');
+      return;
+    }
+    section.classList.remove('hidden');
+
+    list.innerHTML = convos.slice(0, 8).map(c => `
+      <button class="recent-item" data-id="${c.id}" data-cwd="${this.escapeHtml(c.cwd || '')}">
+        <span class="repo-icon">💬</span>
+        <span class="repo-name">${this.escapeHtml(c.title)}</span>
+        <span class="convo-meta">${c.messages}</span>
+      </button>
+    `).join('');
+
+    list.querySelectorAll('.recent-item').forEach(item => {
+      item.addEventListener('click', () =>
+        this.resumeConversation(item.dataset.id, item.dataset.cwd));
+    });
+  }
+
+  // Resume a past conversation in a fresh session (`claude --resume <id>`).
+  async resumeConversation(id, cwd) {
+    try {
+      const session = await API.sessions.resume(id, cwd);
+      this.sessions.push(session);
+      this.switchToSession(session.id);
+      this.toast('Resuming conversation…', 'success');
+    } catch (e) {
+      console.error('Resume error:', e);
+      this.toast(e.message, 'error');
+    }
   }
 
   // ─── Command Palette ─────────────────────────────────────

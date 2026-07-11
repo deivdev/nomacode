@@ -102,7 +102,8 @@ function createSession(id, options = {}) {
     cols = 80,
     rows = 24,
     env = {},
-    profileId = null
+    profileId = null,
+    args: extraArgs = null // e.g. ['--resume', '<id>'] to resume a conversation
   } = options;
 
   // Determine command to run
@@ -113,20 +114,17 @@ function createSession(id, options = {}) {
     switch (tool) {
       case 'claude-code':
         command = 'claude';
-        args = [];
         break;
       case 'opencode':
         command = 'opencode';
-        args = [];
         break;
       case 'codex':
         command = 'codex';
-        args = [];
         break;
       default:
         command = defaultShell;
-        args = [];
     }
+    if (Array.isArray(extraArgs)) args = extraArgs;
   }
 
   const processEnv = {

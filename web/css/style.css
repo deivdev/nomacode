@@ -412,6 +412,18 @@ body.keyboard-visible #main-content {
   font-size: 11px;
 }
 
+/* Message-count badge on a "Resume Conversation" item */
+.recent-item .convo-meta {
+  color: var(--text-dim);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.recent-item .repo-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Key Toolbar (mobile) - only visible with keyboard, sticks above keyboard */
 #key-toolbar {
   position: absolute;
