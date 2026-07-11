@@ -40,7 +40,10 @@ function commandExists(cmd, fastCheck = false) {
   }
 
   const isWindows = process.platform === 'win32';
-  const whichCmd = isWindows ? 'where' : 'which';
+  // `which` is not present on Termux (and not guaranteed on minimal Linux);
+  // `command -v` is a POSIX shell builtin that's always available. Using it
+  // fixes every tool showing as "not installed" on Termux.
+  const whichCmd = isWindows ? 'where' : 'command -v';
 
   try {
     // First check if command is in PATH
