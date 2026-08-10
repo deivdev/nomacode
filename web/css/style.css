@@ -478,6 +478,15 @@ body.keyboard-visible #main-content {
   color: var(--bg);
 }
 
+/* Enter is the most-used key on a soft keyboard that swallows its own
+   Return, so give it a wider target and accent it as the primary action. */
+.key-btn-enter {
+  min-width: 60px;
+  border-color: var(--accent);
+  color: var(--accent);
+  font-size: 15px;
+}
+
 .toolbar-sep {
   width: 1px;
   height: 24px;

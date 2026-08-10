@@ -1954,6 +1954,14 @@ class Nomacode {
         // Shift+Tab sends backtab escape sequence
         data = this.shiftHeld ? '\x1b[Z' : '\t';
         break;
+      case 'Enter':
+        // Carriage return, not \n: terminals submit on CR. Without this case
+        // the default branch would send the literal string "Enter".
+        data = '\r';
+        break;
+      case 'Backspace':
+        data = '\x7f';
+        break;
       case 'ArrowUp':
         data = '\x1b[A';
         break;
