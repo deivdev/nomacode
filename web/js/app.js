@@ -737,17 +737,27 @@ class Nomacode {
     // every unrelated redraw, so ACCEPT/PLAN flickered straight back to NORMAL.
     let newMode = undefined;
 
+    // Claude Code's permission modes are: manual, auto, acceptEdits, plan
+    // (plus bypassPermissions / dontAsk). Shift+Tab cycles the first few and
+    // announces the new one as "<mode> mode on". "manual" is the baseline that
+    // we surface as NORMAL.
+    //
     // Check the exit markers FIRST: "plan mode off" and "exited plan mode"
     // both contain "plan mode", so an entry-first ordering claims them and the
     // label sticks on PLAN forever. No loose /plan.*mode/ regex either — it
     // matches ordinary prose like "I'll plan the refactor in normal mode",
     // and Claude's own output is echoed to the terminal.
-    if (clean.includes('exited plan') || clean.includes('plan mode off') || clean.includes('accept edits off')) {
+    if (clean.includes('exited plan') || clean.includes('plan mode off') ||
+        clean.includes('accept edits off') || clean.includes('manual mode on')) {
       newMode = null;
     } else if (clean.includes('plan mode on') || clean.includes('[plan]')) {
       newMode = 'PLAN';
-    } else if (clean.includes('accept edits on') || clean.includes('autoaccept') || clean.includes('auto-accept') || clean.includes('[auto]')) {
+    } else if (clean.includes('accept edits on') || clean.includes('autoaccept') ||
+               clean.includes('auto-accept') || clean.includes('[auto]')) {
       newMode = 'ACCEPT';
+    } else if (clean.includes('auto mode on')) {
+      // Distinct from acceptEdits: auto mode picks permissions per tool call.
+      newMode = 'AUTO';
     }
 
     if (newMode !== undefined && newMode !== this.claudeMode) {
