@@ -755,6 +755,12 @@ class Nomacode {
     } else if (clean.includes('accept edits on') || clean.includes('autoaccept') ||
                clean.includes('auto-accept') || clean.includes('[auto]')) {
       newMode = 'ACCEPT';
+    } else if (clean.includes('bypass permissions on') || clean.includes('bypassing permissions') ||
+               clean.includes('bypass permissions mode on')) {
+      // Every permission prompt is skipped in this mode, so surface it loudly
+      // (red chip) rather than as just another state — the user should never
+      // be in it without knowing.
+      newMode = 'BYPASS';
     } else if (clean.includes('auto mode on')) {
       // Distinct from acceptEdits: auto mode picks permissions per tool call.
       newMode = 'AUTO';

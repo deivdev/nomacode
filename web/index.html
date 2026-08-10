@@ -103,13 +103,16 @@
     </div>
 
     <!-- Status Bar -->
+    <!-- Mode is the only genuinely dynamic thing here. The cwd, tool name and
+         session counter all restate what the tab bar already shows, so they
+         are dropped on narrow screens to give the key strip its space back. -->
     <footer id="statusbar">
       <div class="status-left">
         <span id="status-mode">NORMAL</span>
-        <span class="separator">│</span>
-        <span id="status-cwd">~</span>
+        <span class="separator status-detail">│</span>
+        <span id="status-cwd" class="status-detail">~</span>
       </div>
-      <div class="status-right">
+      <div class="status-right status-detail">
         <span id="status-tool"></span>
         <span class="separator">│</span>
         <span id="status-session"></span>

@@ -440,7 +440,12 @@ body.keyboard-visible #main-content {
   right: 0;
   display: none;
   align-items: center;
-  justify-content: center;
+  /* NOT `center`: this strip scrolls horizontally once the keys stop fitting,
+     and centring a scrollable flex row makes the overflow spill off BOTH
+     edges — the leading keys (ESC first) become unreachable because the
+     scrollable area starts past them. Pack from the start instead, so the
+     strip always begins at ESC and only overflows to the right. */
+  justify-content: flex-start;
   gap: 4px;
   height: var(--toolbar-height);
   padding: 0 8px;
@@ -555,6 +560,19 @@ body.keyboard-visible #statusbar {
   gap: 8px;
 }
 
+/* cwd / tool / session counter duplicate the tab bar. On a phone that row is
+   pure overhead, so keep only the mode chip and let the bar shrink. */
+@media (max-width: 600px) {
+  .status-detail {
+    display: none;
+  }
+
+  #statusbar {
+    justify-content: flex-start;
+    padding: 0 8px;
+  }
+}
+
 #status-mode {
   color: var(--bg);
   background: var(--green);
@@ -587,6 +605,13 @@ body.keyboard-visible #statusbar {
    own colour rather than reusing the ACCEPT purple. */
 #status-mode.auto {
   background: var(--cyan);
+}
+
+/* bypassPermissions skips every permission prompt. Red, and bright text, so
+   it reads as a warning rather than just another mode. */
+#status-mode.bypass {
+  background: var(--red);
+  color: var(--text-bright);
 }
 
 #status-cwd {
