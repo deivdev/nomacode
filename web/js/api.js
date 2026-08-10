@@ -75,6 +75,16 @@ const API = {
       return API.request('POST', '/sessions', body);
     },
 
+    // Past Claude conversations that can be resumed.
+    conversations() {
+      return API.request('GET', '/sessions/conversations');
+    },
+
+    // Start a new session that resumes a past conversation (`claude --resume`).
+    resume(resumeId, cwd) {
+      return API.request('POST', '/sessions', { tool: 'claude-code', resumeId, cwd });
+    },
+
     delete(id) {
       return API.request('DELETE', `/sessions/${id}`);
     },

@@ -294,12 +294,16 @@ body.keyboard-visible #main-content {
   align-items: center;
   justify-content: center;
   background: var(--bg);
+  /* Never let a wide child (long titles, ascii logo) scroll the page sideways. */
+  overflow-x: hidden;
 }
 
 .welcome-content {
   text-align: center;
+  width: 100%;
   max-width: 600px;
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .ascii-logo {
@@ -410,6 +414,21 @@ body.keyboard-visible #main-content {
 .recent-item .repo-path {
   color: var(--text-dim);
   font-size: 11px;
+}
+
+/* Message-count badge on a "Resume Conversation" item */
+.recent-item .convo-meta {
+  color: var(--text-dim);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.recent-item .repo-name {
+  /* min-width:0 lets a flex child shrink below its content width so a long
+     conversation title ellipsizes instead of overflowing the viewport. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Key Toolbar (mobile) - only visible with keyboard, sticks above keyboard */
