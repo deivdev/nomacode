@@ -86,27 +86,33 @@
       </div>
     </main>
 
-    <!-- Key Toolbar (mobile) -->
+    <!-- Key Toolbar (mobile). The mode chip is pinned outside the scrolling
+         strip so it can't scroll away, and so it no longer needs a status-bar
+         row of its own. Enter is pinned on the right for the same reason: it's
+         the most-used key and must never require a scroll to reach. -->
     <div id="key-toolbar">
-      <button class="key-btn" data-key="Escape">ESC</button>
-      <button class="key-btn modifier" data-modifier="ctrl">CTRL</button>
-      <button class="key-btn modifier" data-modifier="alt">ALT</button>
-      <button class="key-btn" data-key="Tab">TAB</button>
-      <span class="toolbar-sep"></span>
-      <button class="key-btn" data-key="ArrowUp">↑</button>
-      <button class="key-btn" data-key="ArrowDown">↓</button>
-      <button class="key-btn" data-key="ArrowLeft">←</button>
-      <button class="key-btn" data-key="ArrowRight">→</button>
-      <span class="toolbar-sep"></span>
-      <button class="key-btn" data-key="Backspace" aria-label="Backspace">⌫</button>
+      <button id="status-mode" class="key-btn" title="Cycle Claude permission mode">NORMAL</button>
+      <div id="key-scroll">
+        <button class="key-btn" data-key="Escape">ESC</button>
+        <button class="key-btn modifier" data-modifier="ctrl">CTRL</button>
+        <button class="key-btn modifier" data-modifier="alt">ALT</button>
+        <button class="key-btn" data-key="Tab">TAB</button>
+        <span class="toolbar-sep"></span>
+        <button class="key-btn" data-key="ArrowUp">↑</button>
+        <button class="key-btn" data-key="ArrowDown">↓</button>
+        <button class="key-btn" data-key="ArrowLeft">←</button>
+        <button class="key-btn" data-key="ArrowRight">→</button>
+        <span class="toolbar-sep"></span>
+        <button class="key-btn" data-key="Backspace" aria-label="Backspace">⌫</button>
+      </div>
       <button class="key-btn key-btn-enter" data-key="Enter" aria-label="Enter">⏎</button>
     </div>
 
-    <!-- Status Bar -->
+    <!-- Status Bar. The mode chip moved into the key strip, and cwd / tool /
+         session counter all restate what the tab bar already shows, so the
+         whole row is hidden on narrow screens — 32px back to the terminal. -->
     <footer id="statusbar">
       <div class="status-left">
-        <span id="status-mode">NORMAL</span>
-        <span class="separator">│</span>
         <span id="status-cwd">~</span>
       </div>
       <div class="status-right">

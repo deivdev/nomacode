@@ -84,15 +84,20 @@ class Nomacode {
       const heightDiff = initialHeight - vh;
       const keyboardVisible = heightDiff > keyboardThreshold;
 
-      // Toggle keyboard visibility class and toolbar
-      const toolbar = document.getElementById('key-toolbar');
+      // The keyboard-visible class only drives layout offsets (the toolbar
+      // sits above the keyboard when it's up).
       if (keyboardVisible) {
         document.body.classList.add('keyboard-visible');
-        toolbar?.classList.add('visible');
       } else {
         document.body.classList.remove('keyboard-visible');
-        toolbar?.classList.remove('visible');
       }
+
+      // Toolbar visibility is deliberately NOT tied to the keyboard: ESC,
+      // the arrows and Ctrl are exactly the keys you need while the keyboard
+      // is closed (navigating Claude's menus, sending Ctrl+C, dismissing a
+      // prompt). Gating them on an open keyboard made them unreachable at
+      // the moment they were most useful.
+      this.updateKeyToolbar();
 
       // Refit terminal when viewport changes
       if (this.activeSessionId) {
@@ -755,6 +760,12 @@ class Nomacode {
     } else if (clean.includes('accept edits on') || clean.includes('autoaccept') ||
                clean.includes('auto-accept') || clean.includes('[auto]')) {
       newMode = 'ACCEPT';
+    } else if (clean.includes('bypass permissions on') || clean.includes('bypassing permissions') ||
+               clean.includes('bypass permissions mode on')) {
+      // Every permission prompt is skipped in this mode, so surface it loudly
+      // (red chip) rather than as just another state — the user should never
+      // be in it without knowing.
+      newMode = 'BYPASS';
     } else if (clean.includes('auto mode on')) {
       // Distinct from acceptEdits: auto mode picks permissions per tool call.
       newMode = 'AUTO';
@@ -894,11 +905,16 @@ class Nomacode {
       terminalView.classList.add('hidden');
       terminalView.classList.remove('active');
     }
+
+    // The strip belongs to the terminal, not the welcome screen.
+    this.updateKeyToolbar();
   }
 
   showWelcome() {
-    this.showView('welcome');
+    // Clear the active session BEFORE showView: updateKeyToolbar() reads it,
+    // and a stale id would leave the key strip on the welcome screen.
     this.activeSessionId = null;
+    this.showView('welcome');
     this.claudeMode = null;
     this.updateClaudeModeDisplay();
     this.renderTabs();
@@ -1925,6 +1941,19 @@ class Nomacode {
   }
 
   // ─── Key Toolbar ────────────────────────────────────────────
+
+  // Show the key strip whenever a terminal is on screen on a touch device.
+  // Desktop keeps it hidden (there's a real keyboard, and the media query in
+  // style.css hides it there anyway).
+  updateKeyToolbar() {
+    const toolbar = document.getElementById('key-toolbar');
+    if (!toolbar) return;
+
+    const terminalVisible = !!this.activeSessionId &&
+      !document.getElementById('terminal-view')?.classList.contains('hidden');
+
+    toolbar.classList.toggle('visible', terminalVisible);
+  }
 
   bindKeyToolbar() {
     const toolbar = document.getElementById('key-toolbar');
