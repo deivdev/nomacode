@@ -14,6 +14,7 @@
   --yellow: #d29922;
   --red: #f85149;
   --purple: #a371f7;
+  --cyan: #39c5cf;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
   --topbar-height: 56px;
   --toolbar-height: 44px;
@@ -580,6 +581,12 @@ body.keyboard-visible #statusbar {
 
 #status-mode.accept {
   background: var(--purple);
+}
+
+/* Claude's "auto" permission mode — distinct from acceptEdits, so it gets its
+   own colour rather than reusing the ACCEPT purple. */
+#status-mode.auto {
+  background: var(--cyan);
 }
 
 #status-cwd {
