@@ -222,11 +222,11 @@ html, body {
   overflow: hidden;
 }
 
-/* Reserve room whenever the key strip is on screen. It is no longer tied to
-   the keyboard being open, so keying off .keyboard-visible alone would let
-   the strip overlap the terminal's last line with the keyboard closed. */
-body:has(#key-toolbar.visible) #main-content,
-body.keyboard-visible #main-content {
+/* Reserve room whenever the key strip is on screen. Keyed off the strip's own
+   .visible class, not .keyboard-visible: the strip is no longer tied to the
+   keyboard being open, so it would otherwise overlap the terminal's last line
+   whenever the keyboard was closed. */
+body:has(#key-toolbar.visible) #main-content {
   bottom: calc(var(--toolbar-height) + var(--statusbar-height));
 }
 
@@ -443,11 +443,6 @@ body.keyboard-visible #main-content {
   right: 0;
   display: none;
   align-items: center;
-  /* NOT `center`: this strip scrolls horizontally once the keys stop fitting,
-     and centring a scrollable flex row makes the overflow spill off BOTH
-     edges — the leading keys (ESC first) become unreachable because the
-     scrollable area starts past them. Pack from the start instead, so the
-     strip always begins at ESC and only overflows to the right. */
   justify-content: flex-start;
   gap: 4px;
   height: var(--toolbar-height);
@@ -455,8 +450,39 @@ body.keyboard-visible #main-content {
   background: var(--bg-light);
   border-top: 1px solid var(--border);
   z-index: 101;
+  /* The strip itself does NOT scroll — only #key-scroll does. That keeps the
+     mode chip and Enter pinned at the edges where they can't scroll away. */
+  overflow: hidden;
+}
+
+/* The scrolling middle. Packed from flex-start, never centred: centring a
+   scrollable flex row pushes the overflow off BOTH edges, so the leading keys
+   (ESC first) sit before the scrollable area and can't be reached. */
+#key-scroll {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+#key-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mode chip, pinned left. Colours come from the #status-mode rules below. */
+#key-toolbar > #status-mode {
+  flex-shrink: 0;
+  min-width: 62px;
+  padding: 0 8px;
+  height: 36px;
+  border: none;
+  font-size: 10px;
+  letter-spacing: 0.3px;
 }
 
 #key-toolbar.visible {
@@ -507,12 +533,14 @@ body.keyboard-visible #main-content {
 }
 
 /* Enter is the most-used key on a soft keyboard that swallows its own
-   Return, so give it a wider target and accent it as the primary action. */
+   Return, so give it a wider target and accent it as the primary action.
+   Pinned outside #key-scroll so it never scrolls out of reach. */
 .key-btn-enter {
   min-width: 60px;
   border-color: var(--accent);
   color: var(--accent);
   font-size: 15px;
+  flex-shrink: 0;
 }
 
 .toolbar-sep {
@@ -523,21 +551,21 @@ body.keyboard-visible #main-content {
   flex-shrink: 0;
 }
 
-/* Never show toolbar on desktop (even with keyboard) */
-@media (min-width: 768px) and (hover: hover) {
+/* Never show the strip on a wide screen — there's a real keyboard there.
+   Width alone, no `(hover: hover)`: a touch-capable laptop failed that test,
+   so the strip hid while the :has() rules above still reserved its space,
+   leaving the statusbar overlapping the terminal's last line. Hiding and
+   space-reclaiming must be driven by the SAME condition. */
+@media (min-width: 768px) {
   #key-toolbar {
     display: none !important;
   }
 
-  /* The strip is hidden here, so reclaim its reserved space — including from
-     the :has() rules above, which would otherwise leave a phantom gap. */
-  body:has(#key-toolbar.visible) #main-content,
-  body.keyboard-visible #main-content {
+  body:has(#key-toolbar.visible) #main-content {
     bottom: var(--statusbar-height);
   }
 
-  body:has(#key-toolbar.visible) #statusbar,
-  body.keyboard-visible #statusbar {
+  body:has(#key-toolbar.visible) #statusbar {
     bottom: 0;
   }
 }
@@ -562,8 +590,7 @@ body.keyboard-visible #main-content {
 
 /* The statusbar sits directly above the key strip whenever that strip is
    shown — again not just when the keyboard is open. */
-body:has(#key-toolbar.visible) #statusbar,
-body.keyboard-visible #statusbar {
+body:has(#key-toolbar.visible) #statusbar {
   bottom: var(--toolbar-height);
 }
 
@@ -573,16 +600,16 @@ body.keyboard-visible #statusbar {
   gap: 8px;
 }
 
-/* cwd / tool / session counter duplicate the tab bar. On a phone that row is
-   pure overhead, so keep only the mode chip and let the bar shrink. */
+/* cwd / tool / session counter all duplicate the tab bar, and the mode chip
+   now lives in the key strip — so on a phone this row has nothing unique left
+   to show. Drop it entirely and give its 32px back to the terminal. */
 @media (max-width: 600px) {
-  .status-detail {
+  #statusbar {
     display: none;
   }
 
-  #statusbar {
-    justify-content: flex-start;
-    padding: 0 8px;
+  #main-content {
+    bottom: 0;
   }
 }
 
