@@ -49,7 +49,8 @@ function createSession(id, options = {}) {
     tool = null,
     cols = 80,
     rows = 24,
-    env = {}
+    env = {},
+    profileId = null
   } = options;
 
   // Determine command to run
@@ -104,6 +105,7 @@ function createSession(id, options = {}) {
       pid: proc.pid,
       tool,
       cwd,
+      profileId,
       status: 'running',
       createdAt: new Date().toISOString(),
       buffer: '',
@@ -139,7 +141,7 @@ function createSession(id, options = {}) {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
-    session = createChildProcessSession(id, proc, tool, cwd, 'script');
+    session = createChildProcessSession(id, proc, tool, cwd, 'script', profileId);
     setupChildProcessHandlers(session);
 
   } else {
@@ -151,7 +153,7 @@ function createSession(id, options = {}) {
       shell: os.platform() === 'win32'
     });
 
-    session = createChildProcessSession(id, proc, tool, cwd, 'direct');
+    session = createChildProcessSession(id, proc, tool, cwd, 'direct', profileId);
     setupChildProcessHandlers(session);
   }
 
@@ -159,13 +161,14 @@ function createSession(id, options = {}) {
   return session;
 }
 
-function createChildProcessSession(id, proc, tool, cwd, method) {
+function createChildProcessSession(id, proc, tool, cwd, method, profileId) {
   return {
     id,
     pty: proc,
     pid: proc.pid,
     tool,
     cwd,
+    profileId,
     status: 'running',
     createdAt: new Date().toISOString(),
     buffer: '',

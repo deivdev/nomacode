@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const ptyManager = require('../services/pty-manager');
 const repoManager = require('../services/repo-manager');
 const toolDetector = require('../services/tool-detector');
+const { resolveProfileEnv } = require('./profiles');
 
 // List all sessions
 router.get('/', (req, res) => {
@@ -18,7 +19,7 @@ router.get('/', (req, res) => {
 // Create new session
 router.post('/', (req, res) => {
   try {
-    const { repoId, tool, cols, rows } = req.body;
+    const { repoId, tool, cols, rows, profileId } = req.body;
 
     // Validate tool exists in our list (but skip slow availability re-check)
     // The frontend already shows only available tools, and if the tool
@@ -44,13 +45,24 @@ router.post('/', (req, res) => {
       repoManager.updateRepo(repoId, { lastOpened: new Date().toISOString() });
     }
 
+    // Resolve profile env vars
+    let profileEnv = {};
+    if (profileId) {
+      profileEnv = resolveProfileEnv(profileId);
+      if (!profileEnv) {
+        return res.status(400).json({ error: 'Profile not found' });
+      }
+    }
+
     // Create session
     const sessionId = uuidv4();
     const session = ptyManager.createSession(sessionId, {
       cwd: cwd,
       tool: tool || null,
       cols: cols || 80,
-      rows: rows || 24
+      rows: rows || 24,
+      env: profileEnv,
+      profileId: profileId || null
     });
 
     res.status(201).json({
@@ -110,13 +122,18 @@ router.post('/:id/restart', (req, res) => {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    // Kill old session
+    // Kill old session and recreate with same settings
+    const prevProfileId = session.profileId;
     ptyManager.killSession(req.params.id);
 
-    // Create new session with same settings
+    // Profile may have been deleted since the session started; fall back to
+    // system env rather than failing the restart.
+    const restartEnv = (prevProfileId ? resolveProfileEnv(prevProfileId) : {}) || {};
     const newSession = ptyManager.createSession(req.params.id, {
       cwd: session.cwd,
-      tool: session.tool
+      tool: session.tool,
+      env: restartEnv,
+      profileId: prevProfileId || null
     });
 
     res.json({

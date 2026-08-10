@@ -13,6 +13,7 @@ const defaultConfig = {
     fontSize: 14,
     fontFamily: 'monospace'
   },
+  profiles: [],
   repos: []
 };
 
@@ -62,6 +63,10 @@ function set(newConfig) {
 function save() {
   try {
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), { mode: 0o600 });
+    // writeFileSync only applies `mode` when creating the file, so configs
+    // written before profiles existed keep their old, possibly world-readable
+    // permissions. The file now holds API keys, so enforce 0600 every save.
+    fs.chmodSync(CONFIG_FILE, 0o600);
   } catch (err) {
     console.error('Error saving config file:', err.message);
   }
