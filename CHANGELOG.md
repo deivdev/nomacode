@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **OpenCode runs natively on Termux** — installs from the prebuilt aarch64 packages published by [guysoft/opencode-termux](https://github.com/guysoft/opencode-termux), which cross-compiles Bun and WebKit/JSC for Android. The install is verified against the release's published SHA256SUMS.
+
+### Removed
+- **Codex support** — removed from the tool list, session launcher, settings validation and UI. The "coming soon" badge mechanism it was the sole user of is gone too.
+
+### Platform Notes
+- The previous note that OpenCode "does not work natively on Termux/Android" no longer applies. `npm install -g opencode-ai` still cannot work there — OpenCode compiles via Bun, which has no Android support — so on Termux Nomacode installs the prebuilt aarch64 build instead.
+
 ## v2026.3.1 (2026-03-03)
 
 ### Added

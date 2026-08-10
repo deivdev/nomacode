@@ -28,9 +28,9 @@ router.put('/', (req, res) => {
     }
 
     if (defaultTool !== undefined) {
-      if (!['claude-code', 'opencode', 'codex', 'bash'].includes(defaultTool)) {
+      if (!['claude-code', 'opencode', 'bash'].includes(defaultTool)) {
         return res.status(400).json({
-          error: 'defaultTool must be "claude-code", "opencode", "codex", or "bash"'
+          error: 'defaultTool must be "claude-code", "opencode", or "bash"'
         });
       }
       updates.defaultTool = defaultTool;

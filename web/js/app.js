@@ -1091,10 +1091,9 @@ class Nomacode {
       `<option value="${t.id}">${this.escapeHtml(t.name)}</option>`
     ).join('');
 
-    // Build unavailable tools with install buttons (exclude coming soon tools)
-    const comingSoonIds = ['codex'];
+    // Build unavailable tools with install buttons
     let unavailableHint = '';
-    const installableTools = (this.tools?.unavailable || []).filter(t => !comingSoonIds.includes(t.id));
+    const installableTools = this.tools?.unavailable || [];
     if (installableTools.length > 0) {
       const hints = installableTools.map(t =>
         `<div class="install-hint">
@@ -1105,23 +1104,6 @@ class Nomacode {
       unavailableHint = `
         <div class="form-group">
           <label class="form-label form-label-muted">Install AI tools:</label>
-          ${hints}
-        </div>
-      `;
-    }
-
-    // Show coming soon tools (if not available)
-    let comingSoonHint = '';
-    const comingSoonTools = (this.tools?.unavailable || []).filter(t => comingSoonIds.includes(t.id));
-    if (comingSoonTools.length > 0) {
-      const hints = comingSoonTools.map(t =>
-        `<div class="coming-soon-hint">
-          <span class="hint-name">${this.escapeHtml(t.name)}</span>
-          <span class="coming-soon-badge">Coming soon</span>
-        </div>`
-      ).join('');
-      comingSoonHint = `
-        <div class="form-group">
           ${hints}
         </div>
       `;
@@ -1153,7 +1135,6 @@ class Nomacode {
         </select>
       </div>
       ${unavailableHint}
-      ${comingSoonHint}
       <div class="form-actions">
         <button class="btn" onclick="app.hideModal()">Cancel</button>
         <button class="btn btn-primary" onclick="app.submitNewSession()">Start</button>

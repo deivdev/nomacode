@@ -71,19 +71,17 @@ Currently Nomacode requires Termux, which is Android-only. iOS implementation id
 
 Have ideas? Open an issue or PR.
 
-### OpenCode & Codex Support
-
-Currently only Claude Code works natively in Termux. OpenCode and Codex require a full Linux environment (proot-distro), which is too slow for practical use on mobile devices.
+### Tool Support
 
 **Current status:**
 - **Claude Code** - Works natively in Termux
-- **OpenCode** - Requires proot-distro (too slow)
-- **Codex** - Requires proot-distro (too slow)
+- **OpenCode** - Works natively in Termux via the prebuilt aarch64 build
 
-**Possible solutions being explored:**
-- Native ARM builds for Termux
-- Lightweight alternatives that run directly in Termux
-- Performance optimizations for proot-distro
+OpenCode compiles to a standalone binary using [Bun](https://bun.sh/), which
+has no official Android support, so `npm install -g opencode-ai` cannot work
+under Termux. [guysoft/opencode-termux](https://github.com/guysoft/opencode-termux)
+cross-compiles Bun and WebKit/JSC for Android/aarch64 and publishes prebuilt
+packages; Nomacode installs from those automatically when running on Termux.
 
 ### Community Standards
 

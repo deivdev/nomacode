@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Nomacode is a mobile-first PWA for running AI coding assistants (Claude Code, OpenCode, Codex) on Android via Termux. It provides a terminal emulator interface with repository management and multi-session support.
+Nomacode is a mobile-first PWA for running AI coding assistants (Claude Code, OpenCode) on Android via Termux. It provides a terminal emulator interface with repository management and multi-session support.
 
 **Stack**: Express backend + Vanilla JS frontend with xterm.js
 

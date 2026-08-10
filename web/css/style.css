@@ -823,41 +823,6 @@ body:has(#key-toolbar.visible) #statusbar {
   background: var(--accent-dim);
 }
 
-/* Coming soon hint */
-.coming-soon-hint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  background: var(--surface);
-  border-radius: 4px;
-  font-size: 12px;
-}
-
-.coming-soon-hint .hint-name {
-  color: var(--text-dim);
-}
-
-.coming-soon-badge {
-  padding: 2px 6px;
-  background: var(--border);
-  border-radius: 3px;
-  color: var(--text-dim);
-  font-size: 10px;
-  text-transform: uppercase;
-}
-
-.coming-soon-link {
-  margin-left: auto;
-  color: var(--accent);
-  font-size: 11px;
-  text-decoration: none;
-}
-
-.coming-soon-link:hover {
-  text-decoration: underline;
-}
-
 /* Profile items in settings */
 .profiles-list {
   display: flex;
