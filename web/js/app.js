@@ -725,12 +725,17 @@ class Nomacode {
     // every unrelated redraw, so ACCEPT/PLAN flickered straight back to NORMAL.
     let newMode = undefined;
 
-    if (clean.includes('plan mode on') || clean.includes('[plan]') || /\bplan\b.*mode\b/i.test(clean)) {
+    // Check the exit markers FIRST: "plan mode off" and "exited plan mode"
+    // both contain "plan mode", so an entry-first ordering claims them and the
+    // label sticks on PLAN forever. No loose /plan.*mode/ regex either — it
+    // matches ordinary prose like "I'll plan the refactor in normal mode",
+    // and Claude's own output is echoed to the terminal.
+    if (clean.includes('exited plan') || clean.includes('plan mode off') || clean.includes('accept edits off')) {
+      newMode = null;
+    } else if (clean.includes('plan mode on') || clean.includes('[plan]')) {
       newMode = 'PLAN';
     } else if (clean.includes('accept edits on') || clean.includes('autoaccept') || clean.includes('auto-accept') || clean.includes('[auto]')) {
       newMode = 'ACCEPT';
-    } else if (clean.includes('exited plan') || clean.includes('plan mode off') || clean.includes('accept edits off')) {
-      newMode = null;
     }
 
     if (newMode !== undefined && newMode !== this.claudeMode) {
