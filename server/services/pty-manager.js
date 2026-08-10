@@ -155,9 +155,18 @@ function createSession(id, options = {}) {
       tmuxSessName = tmuxName(id);
       const inner = [command, ...args].join(' ');
       spawnCmd = 'tmux';
+      // Pass per-session env explicitly with -e. The tmux SERVER is shared
+      // across sessions and inherits its environment from whichever client
+      // first started it, so profile credentials placed only in this client's
+      // env would be ignored for every session after the first — a second
+      // profile would silently run with the first profile's API key.
+      const envArgs = [];
+      for (const [k, v] of Object.entries(env || {})) {
+        if (v !== undefined && v !== null) envArgs.push('-e', `${k}=${v}`);
+      }
       spawnArgs = [...TMUX_G, 'new-session', '-A',
         '-s', tmuxSessName, '-c', cwd,
-        '-x', String(cols), '-y', String(rows), inner];
+        '-x', String(cols), '-y', String(rows), ...envArgs, inner];
       // A stray $TMUX in the env would make tmux refuse to nest.
       delete processEnv.TMUX;
       delete processEnv.TMUX_PANE;
