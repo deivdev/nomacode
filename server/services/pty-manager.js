@@ -22,7 +22,10 @@ for (const pkg of ptyPackages) {
 if (ptyMethod !== 'node-pty') {
   // Check if 'script' command is available (Unix only)
   if (os.platform() !== 'win32') {
-    const result = spawnSync('which', ['script'], { encoding: 'utf8' });
+    // Probe via `sh -c 'command -v'` rather than the `which` binary: Termux
+    // ships no `which`, so spawnSync would fail with ENOENT (status null) and
+    // silently drop to the no-PTY path even when `script` is installed.
+    const result = spawnSync('sh', ['-c', 'command -v script'], { encoding: 'utf8' });
     if (result.status === 0 && result.stdout.trim()) {
       ptyMethod = 'script';
       console.log('[pty-manager] Using script command for PTY');
