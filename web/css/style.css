@@ -222,7 +222,10 @@ html, body {
   overflow: hidden;
 }
 
-/* When keyboard is visible, make room for toolbar */
+/* Reserve room whenever the key strip is on screen. It is no longer tied to
+   the keyboard being open, so keying off .keyboard-visible alone would let
+   the strip overlap the terminal's last line with the keyboard closed. */
+body:has(#key-toolbar.visible) #main-content,
 body.keyboard-visible #main-content {
   bottom: calc(var(--toolbar-height) + var(--statusbar-height));
 }
@@ -526,8 +529,16 @@ body.keyboard-visible #main-content {
     display: none !important;
   }
 
+  /* The strip is hidden here, so reclaim its reserved space — including from
+     the :has() rules above, which would otherwise leave a phantom gap. */
+  body:has(#key-toolbar.visible) #main-content,
   body.keyboard-visible #main-content {
     bottom: var(--statusbar-height);
+  }
+
+  body:has(#key-toolbar.visible) #statusbar,
+  body.keyboard-visible #statusbar {
+    bottom: 0;
   }
 }
 
@@ -549,7 +560,9 @@ body.keyboard-visible #main-content {
   z-index: 100;
 }
 
-/* When keyboard visible, statusbar goes above toolbar */
+/* The statusbar sits directly above the key strip whenever that strip is
+   shown — again not just when the keyboard is open. */
+body:has(#key-toolbar.visible) #statusbar,
 body.keyboard-visible #statusbar {
   bottom: var(--toolbar-height);
 }
