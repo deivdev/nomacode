@@ -118,9 +118,6 @@ function createSession(id, options = {}) {
       case 'opencode':
         command = 'opencode';
         break;
-      case 'codex':
-        command = 'codex';
-        break;
       default:
         command = defaultShell;
     }

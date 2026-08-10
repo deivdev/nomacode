@@ -52,7 +52,7 @@ router.post('/:id/install', (req, res) => {
     return res.status(404).json({ error: 'Unknown tool' });
   }
 
-  if (!info.installCmd) {
+  if (!info.installCmd && !info.installScript) {
     return res.status(400).json({ error: 'Tool cannot be installed' });
   }
 
@@ -64,10 +64,15 @@ router.post('/:id/install', (req, res) => {
     return res.status(409).json({ error: 'Installation already in progress' });
   }
 
-  // Parse install command
-  const parts = info.installCmd.split(' ');
-  const cmd = parts[0];
-  const args = parts.slice(1);
+  // Multi-step installs (download, dpkg, dependency) need a shell; simple
+  // ones stay argv-style so no shell parsing is involved. Both come from the
+  // TOOLS table in tool-detector.js, never from user input.
+  const useScript = !!info.installScript;
+  const cmd = useScript ? 'sh' : info.installCmd.split(' ')[0];
+  const args = useScript
+    ? ['-c', info.installScript]
+    : info.installCmd.split(' ').slice(1);
+  const displayCmd = useScript ? 'OpenCode (Termux aarch64 build)' : info.installCmd;
 
   // Set up SSE for streaming output
   res.setHeader('Content-Type', 'text/event-stream');
@@ -78,7 +83,7 @@ router.post('/:id/install', (req, res) => {
     res.write(`data: ${JSON.stringify({ type, data })}\n\n`);
   };
 
-  sendEvent('start', { tool: toolId, command: info.installCmd });
+  sendEvent('start', { tool: toolId, command: displayCmd });
 
   const proc = spawn(cmd, args, {
     env: { ...process.env, FORCE_COLOR: '0' },

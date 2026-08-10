@@ -1,5 +1,49 @@
 const { execSync } = require('child_process');
 
+// Termux is the primary target and needs different install paths: it is
+// Android/aarch64, so anything requiring Bun can't use the npm package.
+const isTermux = !!process.env.TERMUX_VERSION ||
+  (process.env.PREFIX || '').includes('com.termux');
+
+// OpenCode compiles to a standalone binary via Bun, and Bun has no Android
+// support (upstream marked "not planned"), so `npm install -g opencode-ai`
+// cannot work under Termux. guysoft/opencode-termux cross-compiles Bun and
+// WebKit/JSC for aarch64 and publishes prebuilt packages; use those instead.
+// The .deb asset name embeds the OpenCode version (opencode_1.17.9_aarch64.deb),
+// so there is no stable `releases/latest/download/<name>` URL — the one in the
+// project README 404s. Resolve the real asset from the releases API instead.
+const OPENCODE_TERMUX_INSTALL = [
+  'set -eu',
+  'echo "Installing OpenCode for Termux (aarch64)…"',
+  'pkg install -y ripgrep curl',
+  'api=https://api.github.com/repos/guysoft/opencode-termux/releases/latest',
+  'deb_url=$(curl -fsSL "$api" | grep -o "https://[^\\"]*_aarch64\\.deb" | head -1)',
+  'sums_url=$(curl -fsSL "$api" | grep -o "https://[^\\"]*SHA256SUMS" | head -1)',
+  'if [ -z "$deb_url" ]; then echo "Could not find an aarch64 .deb in the latest release." >&2; exit 1; fi',
+  'tmp=$(mktemp -d)',
+  'trap \'rm -rf "$tmp"\' EXIT',
+  'echo "Downloading $deb_url"',
+  'curl -fL -o "$tmp/opencode.deb" "$deb_url"',
+  // Verify against the published checksums: this is a binary we are about to
+  // install and run. Skipped only if the release has no SHA256SUMS.
+  'if [ -n "$sums_url" ]; then',
+  '  curl -fsSL -o "$tmp/SHA256SUMS" "$sums_url"',
+  '  name=$(basename "$deb_url")',
+  '  want=$(grep " [ *]*$name$" "$tmp/SHA256SUMS" | awk \'{print $1}\' | head -1)',
+  '  if [ -n "$want" ]; then',
+  '    got=$(sha256sum "$tmp/opencode.deb" | awk \'{print $1}\')',
+  '    if [ "$want" != "$got" ]; then echo "Checksum mismatch for $name" >&2; exit 1; fi',
+  '    echo "Checksum OK"',
+  '  else',
+  '    echo "Warning: no checksum listed for $name" >&2',
+  '  fi',
+  'else',
+  '  echo "Warning: release publishes no SHA256SUMS; skipping verification" >&2',
+  'fi',
+  'dpkg -i "$tmp/opencode.deb"',
+  'echo "OpenCode installed."'
+].join('\n');
+
 // Define available tools with their commands and install instructions
 const TOOLS = {
   'claude-code': {
@@ -11,14 +55,12 @@ const TOOLS = {
   'opencode': {
     command: 'opencode',
     name: 'OpenCode',
-    installCmd: 'npm install -g opencode-ai',
+    // On Termux the npm package can't run (no Bun for Android), so install
+    // the prebuilt aarch64 build. installScript needs a shell; installCmd is
+    // a single argv-style command. Exactly one of the two is set.
+    installCmd: isTermux ? null : 'npm install -g opencode-ai',
+    installScript: isTermux ? OPENCODE_TERMUX_INSTALL : null,
     description: 'Open-source AI coding assistant'
-  },
-  'codex': {
-    command: 'codex',
-    name: 'Codex',
-    installCmd: 'npm install -g @openai/codex',
-    description: 'OpenAI Codex CLI'
   },
   'shell': {
     command: null, // Always available
@@ -110,7 +152,9 @@ function detectTools() {
       id,
       name: tool.name,
       description: tool.description,
-      installCmd: tool.installCmd
+      // The UI only needs to know whether an install path exists, not which
+      // mechanism it uses.
+      installCmd: tool.installCmd || (tool.installScript ? 'termux' : null)
     };
 
     if (tool.command === null) {
@@ -134,8 +178,8 @@ function detectTools() {
 
 function getDefaultTool() {
   const { available } = detectTools();
-  // Prefer claude-code, then opencode, then codex, then shell
-  const priority = ['claude-code', 'opencode', 'codex', 'shell'];
+  // Prefer claude-code, then opencode, then shell
+  const priority = ['claude-code', 'opencode', 'shell'];
 
   for (const id of priority) {
     if (available.find(t => t.id === id)) {
