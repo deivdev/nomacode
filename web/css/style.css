@@ -1274,23 +1274,17 @@ body:has(#key-toolbar.visible) #statusbar {
   }
 }
 
-/* Scrollbar */
+/* Scrollbars are chrome in a terminal-style UI: content still scrolls, the
+   bar just isn't drawn. The tab strip, key strip and terminal already hid
+   theirs individually; this makes it the default everywhere instead. */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-dim);
+  width: 0;
+  height: 0;
 }
 
 /* Selection */
