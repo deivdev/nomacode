@@ -24,6 +24,9 @@ class Nomacode {
     // Claude Code mode tracking
     this.claudeMode = null;
 
+    // API profiles
+    this.profiles = [];
+
     // GitHub auth state
     this.githubAuth = { authenticated: false, username: null };
     this.deviceFlowPollInterval = null;
@@ -48,6 +51,7 @@ class Nomacode {
     await this.loadSettings();
     await this.loadGitHubAuthStatus();
     await this.loadTools();
+    await this.loadProfiles();
     await this.loadRepos();
     await this.loadSessions();
 
@@ -271,6 +275,14 @@ class Nomacode {
       this.tools = await API.tools.list();
     } catch (e) {
       this.tools = { available: [{ id: 'shell', name: 'Bash Shell' }], unavailable: [], defaultTool: 'shell' };
+    }
+  }
+
+  async loadProfiles() {
+    try {
+      this.profiles = await API.profiles.list();
+    } catch (e) {
+      this.profiles = [];
     }
   }
 
@@ -528,11 +540,11 @@ class Nomacode {
 
   // ─── Session Management ──────────────────────────────────
 
-  async createSession(repoId = null, tool = null) {
+  async createSession(repoId = null, tool = null, profileId = null) {
     try {
       tool = tool || this.settings?.defaultTool || 'claude-code';
-      console.log('Creating session:', { repoId, tool });
-      const session = await API.sessions.create(repoId, tool, 80, 24);
+      console.log('Creating session:', { repoId, tool, profileId });
+      const session = await API.sessions.create(repoId, tool, 80, 24, profileId);
       console.log('Session created:', session);
       this.sessions.push(session);
       this.switchToSession(session.id);
@@ -1046,6 +1058,10 @@ class Nomacode {
       `;
     }
 
+    const profileOptions = this.profiles.map(p =>
+      `<option value="${p.id}">${this.escapeHtml(p.name)}</option>`
+    ).join('');
+
     this.showModal('New Session', `
       <div class="form-group">
         <label class="form-label">Repository</label>
@@ -1058,6 +1074,13 @@ class Nomacode {
         <label class="form-label">Tool</label>
         <select id="new-tool" class="form-select">
           ${toolOptions}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Profile</label>
+        <select id="new-profile" class="form-select">
+          <option value="">Default (system env)</option>
+          ${profileOptions}
         </select>
       </div>
       ${unavailableHint}
@@ -1075,8 +1098,9 @@ class Nomacode {
   submitNewSession() {
     const repoId = document.getElementById('new-repo').value || null;
     const tool = document.getElementById('new-tool').value || null;
+    const profileId = document.getElementById('new-profile').value || null;
     this.hideModal();
-    this.createSession(repoId, tool);
+    this.createSession(repoId, tool, profileId);
   }
 
   showCloneModal() {
@@ -1294,6 +1318,17 @@ class Nomacode {
       `<option value="${t.id}">${this.escapeHtml(t.name)}</option>`
     ).join('');
 
+    const profilesList = this.profiles.length > 0
+      ? this.profiles.map(p => `
+        <div class="profile-item">
+          <span class="profile-name">${this.escapeHtml(p.name)}</span>
+          <span class="profile-provider">${this.escapeHtml(p.provider)}</span>
+          <button class="btn-icon" onclick="app.showEditProfileModal('${this.escapeAttr(p.id)}')" title="Edit">&#9998;</button>
+          <button class="btn-icon btn-icon-danger" onclick="app.deleteProfile('${this.escapeAttr(p.id)}')" title="Delete">&times;</button>
+        </div>`
+      ).join('')
+      : '<p class="form-hint">No profiles configured.</p>';
+
     this.showModal('Settings', `
       <div class="form-group">
         <label class="form-label">Default tool</label>
@@ -1304,6 +1339,11 @@ class Nomacode {
       <div class="form-group">
         <label class="form-label">Font size</label>
         <input type="number" id="setting-fontsize" class="form-input" min="10" max="24" value="${this.settings?.terminal?.fontSize || 14}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Profiles</label>
+        <div class="profiles-list">${profilesList}</div>
+        <button class="btn btn-sm" onclick="app.showAddProfileModal()" style="margin-top: 8px;">+ Add profile</button>
       </div>
       <div class="form-actions">
         <button class="btn" onclick="app.hideModal()">Cancel</button>
@@ -1332,6 +1372,112 @@ class Nomacode {
 
       this.hideModal();
       this.toast('Settings saved', 'success');
+    } catch (e) {
+      this.toast(e.message, 'error');
+    }
+  }
+
+  showAddProfileModal() {
+    this.showProfileModal();
+  }
+
+  showEditProfileModal(id) {
+    const profile = this.profiles.find(p => p.id === id);
+    if (profile) this.showProfileModal(profile);
+  }
+
+  showProfileModal(profile = null) {
+    const isEdit = !!profile;
+    const title = isEdit ? 'Edit Profile' : 'New Profile';
+
+    this.showModal(title, `
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input type="text" id="profile-name" class="form-input" placeholder="e.g. MiniMax, Ollama..." value="${isEdit ? this.escapeAttr(profile.name) : ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Provider</label>
+        <select id="profile-provider" class="form-select" onchange="app.onProfileProviderChange()">
+          <option value="anthropic">Anthropic</option>
+          <option value="openai">OpenAI</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div id="custom-env-fields" style="display: none;">
+        <div class="form-group">
+          <label class="form-label">API Key env var name</label>
+          <input type="text" id="profile-envkey" class="form-input" placeholder="e.g. MY_API_KEY" value="${isEdit && profile.envKeyName ? this.escapeAttr(profile.envKeyName) : ''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Base URL env var name <span class="form-label-muted">(optional)</span></label>
+          <input type="text" id="profile-envurl" class="form-input" placeholder="e.g. MY_BASE_URL" value="${isEdit && profile.envUrlName ? this.escapeAttr(profile.envUrlName) : ''}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Key</label>
+        <input type="password" id="profile-apikey" class="form-input" placeholder="sk-..." value="">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Base URL <span class="form-label-muted">(optional)</span></label>
+        <input type="text" id="profile-baseurl" class="form-input" placeholder="https://api.example.com/v1" value="${isEdit && profile.baseUrl ? this.escapeAttr(profile.baseUrl) : ''}">
+      </div>
+      <div class="form-actions">
+        <button class="btn" onclick="app.showSettingsModal()">Back</button>
+        <button class="btn btn-primary" onclick="app.submitProfile('${isEdit ? this.escapeAttr(profile.id) : ''}')">${isEdit ? 'Update' : 'Create'}</button>
+      </div>
+    `);
+
+    if (isEdit) {
+      document.getElementById('profile-provider').value = profile.provider;
+      this.onProfileProviderChange();
+    }
+  }
+
+  onProfileProviderChange() {
+    const provider = document.getElementById('profile-provider').value;
+    document.getElementById('custom-env-fields').style.display = provider === 'custom' ? 'block' : 'none';
+  }
+
+  async submitProfile(id) {
+    const name = document.getElementById('profile-name').value;
+    const provider = document.getElementById('profile-provider').value;
+    const apiKey = document.getElementById('profile-apikey').value;
+    const baseUrl = document.getElementById('profile-baseurl').value;
+    const envKeyName = document.getElementById('profile-envkey')?.value || '';
+    const envUrlName = document.getElementById('profile-envurl')?.value || '';
+
+    if (!name.trim()) { this.toast('Name is required', 'error'); return; }
+    if (!apiKey.trim() && !id) { this.toast('API key is required', 'error'); return; }
+    if (provider === 'custom' && !envKeyName.trim()) {
+      this.toast('Custom provider requires an API key env var name', 'error');
+      return;
+    }
+
+    try {
+      const data = { name, provider, baseUrl, envKeyName, envUrlName };
+      if (apiKey.trim()) data.apiKey = apiKey;
+
+      if (id) {
+        await API.profiles.update(id, data);
+        this.toast('Profile updated', 'success');
+      } else {
+        await API.profiles.create(data);
+        this.toast('Profile created', 'success');
+      }
+
+      await this.loadProfiles();
+      this.showSettingsModal();
+    } catch (e) {
+      this.toast(e.message, 'error');
+    }
+  }
+
+  async deleteProfile(id) {
+    try {
+      await API.profiles.delete(id);
+      await this.loadProfiles();
+      this.toast('Profile deleted', 'success');
+      this.showSettingsModal();
     } catch (e) {
       this.toast(e.message, 'error');
     }
@@ -1849,6 +1995,18 @@ class Nomacode {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // escapeHtml() leaves quotes intact, which is fine for text nodes but breaks
+  // out of quoted attribute values. Use this for anything interpolated into an
+  // attribute (value="...", onclick="...('...')").
+  escapeAttr(text) {
+    return String(text ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 }
 

@@ -69,8 +69,10 @@ const API = {
       return API.request('GET', `/sessions/${id}`);
     },
 
-    create(repoId, tool, cols, rows) {
-      return API.request('POST', '/sessions', { repoId, tool, cols, rows });
+    create(repoId, tool, cols, rows, profileId) {
+      const body = { repoId, tool, cols, rows };
+      if (profileId) body.profileId = profileId;
+      return API.request('POST', '/sessions', body);
     },
 
     delete(id) {
@@ -79,6 +81,22 @@ const API = {
 
     restart(id) {
       return API.request('POST', `/sessions/${id}/restart`);
+    }
+  },
+
+  // Profiles
+  profiles: {
+    list() {
+      return API.request('GET', '/profiles');
+    },
+    create(profile) {
+      return API.request('POST', '/profiles', profile);
+    },
+    update(id, profile) {
+      return API.request('PUT', `/profiles/${id}`, profile);
+    },
+    delete(id) {
+      return API.request('DELETE', `/profiles/${id}`);
     }
   },
 

@@ -758,6 +758,60 @@ body.keyboard-visible #statusbar {
   text-decoration: underline;
 }
 
+/* Profile items in settings */
+.profiles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.profile-name {
+  color: var(--text);
+  font-weight: 600;
+  flex: 1;
+}
+
+.profile-provider {
+  color: var(--text-dim);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.btn-icon:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.btn-icon-danger:hover {
+  color: #dc3545;
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
 /* Install modal styles */
 .install-output {
   background: var(--bg);
