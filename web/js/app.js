@@ -719,15 +719,23 @@ class Nomacode {
     // Strip ANSI escape codes for pattern matching
     const clean = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').toLowerCase();
 
-    // Detect mode changes from Claude Code status line
-    let newMode = null;
+    // Detect mode changes from Claude Code status line.
+    // Default is `undefined` = "this output chunk carries no mode info, leave
+    // the current label alone". Using `null` here reset the label to NORMAL on
+    // every unrelated redraw, so ACCEPT/PLAN flickered straight back to NORMAL.
+    let newMode = undefined;
 
-    if (clean.includes('plan mode') || clean.includes('[plan]') || /\bplan\b.*mode/i.test(clean)) {
-      newMode = 'PLAN';
-    } else if (clean.includes('autoaccept') || clean.includes('auto-accept') || clean.includes('[auto]')) {
-      newMode = 'ACCEPT';
-    } else if (clean.includes('exited plan') || clean.includes('plan mode off')) {
+    // Check the exit markers FIRST: "plan mode off" and "exited plan mode"
+    // both contain "plan mode", so an entry-first ordering claims them and the
+    // label sticks on PLAN forever. No loose /plan.*mode/ regex either — it
+    // matches ordinary prose like "I'll plan the refactor in normal mode",
+    // and Claude's own output is echoed to the terminal.
+    if (clean.includes('exited plan') || clean.includes('plan mode off') || clean.includes('accept edits off')) {
       newMode = null;
+    } else if (clean.includes('plan mode on') || clean.includes('[plan]')) {
+      newMode = 'PLAN';
+    } else if (clean.includes('accept edits on') || clean.includes('autoaccept') || clean.includes('auto-accept') || clean.includes('[auto]')) {
+      newMode = 'ACCEPT';
     }
 
     if (newMode !== undefined && newMode !== this.claudeMode) {
@@ -811,12 +819,16 @@ class Nomacode {
   }
 
   cycleMode() {
-    // Iterate through: NORMAL → PLAN → ACCEPT → NORMAL
-    const modes = [null, 'PLAN', 'ACCEPT'];
-    const currentIdx = modes.indexOf(this.claudeMode);
-    const nextIdx = (currentIdx + 1) % modes.length;
-    this.claudeMode = modes[nextIdx];
-    this.updateClaudeModeDisplay();
+    // Actually cycle Claude Code's permission mode by sending a real
+    // Shift+Tab (backtab, ESC[Z) to the PTY. The displayed label is driven
+    // by parsing Claude's output in detectClaudeMode(), so we don't set it
+    // optimistically here (doing so just fought the parser and flickered
+    // back to NORMAL). This is also the only way to send Shift+Tab on mobile,
+    // where there's no physical Shift key.
+    const terminal = this.terminals.get(this.activeSessionId);
+    if (!terminal) return;
+    this.sendInput(this.activeSessionId, '\x1b[Z');
+    terminal.term.focus();
   }
 
   updateLogoCompact() {
