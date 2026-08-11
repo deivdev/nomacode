@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const net = require('net');
 const path = require('path');
 const { exec } = require('child_process');
 const { setupWebSocket, broadcastOpenUrl } = require('./websocket');
@@ -14,7 +15,9 @@ const { version } = require('../package.json');
 
 const app = express();
 const server = http.createServer(app);
-const PORT = process.env.PORT || 3000;
+// process.env.PORT is a string (set by bin/nomacode.js); coerce to a number so
+// the busy-port retry does `port + 1` arithmetic, not string concatenation.
+const PORT = parseInt(process.env.PORT, 10) || 3000;
 
 // Initialize config
 config.init();
@@ -69,15 +72,40 @@ function openBrowser(url) {
   tryNext(0);
 }
 
-// Start server - bind to localhost only for security
-server.listen(PORT, '127.0.0.1', () => {
-  console.log(`
+// Find the first free port starting from `startPort`. Uses a throwaway net
+// server so we never retry listen() on the real http server — re-listening the
+// same http.Server after EADDRINUSE fires spurious 'listening' callbacks.
+function findFreePort(startPort) {
+  return new Promise((resolve, reject) => {
+    const probe = net.createServer();
+    probe.once('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.log(`[index] Port ${startPort} is already in use, trying ${startPort + 1}...`);
+        probe.close();
+        resolve(findFreePort(startPort + 1));
+      } else {
+        reject(err);
+      }
+    });
+    probe.listen(startPort, '127.0.0.1', () => {
+      const port = probe.address().port;
+      probe.close(() => resolve(port));
+    });
+  });
+}
+
+// Start server - bind to localhost only for security. If the requested port
+// is busy, bind to the next free port instead of crashing (EADDRINUSE).
+findFreePort(PORT).then((port) => {
+  process.env.PORT = String(port);
+  server.listen(port, '127.0.0.1', () => {
+    console.log(`
 ┌─────────────────────────────────────────┐
 │         📱 Nomacode v${version.padEnd(19)}│
 ├─────────────────────────────────────────┤
 │                                         │
 │  Server running at:                     │
-│  http://localhost:${PORT.toString().padEnd(5)}                │
+│  http://localhost:${String(port).padEnd(5)}                │
 │                                         │
 │  Tip: Add to Home Screen for PWA        │
 │                                         │
@@ -86,18 +114,22 @@ server.listen(PORT, '127.0.0.1', () => {
 └─────────────────────────────────────────┘
 `);
 
-  // Reattach to any tool sessions that survived a previous server restart
-  // (tmux durability layer in pty-manager). Best-effort; never blocks startup.
-  try {
-    require('./services/pty-manager').reviveSessions();
-  } catch (e) {
-    console.error('[index] reviveSessions failed:', e.message);
-  }
+    // Reattach to any tool sessions that survived a previous server restart
+    // (tmux durability layer in pty-manager). Best-effort; never blocks startup.
+    try {
+      require('./services/pty-manager').reviveSessions();
+    } catch (e) {
+      console.error('[index] reviveSessions failed:', e.message);
+    }
 
-  // Auto-open browser if enabled
-  if (process.env.AUTO_OPEN === '1') {
-    setTimeout(() => openBrowser(`http://localhost:${PORT}`), 500);
-  }
+    // Auto-open browser if enabled
+    if (process.env.AUTO_OPEN === '1') {
+      setTimeout(() => openBrowser(`http://localhost:${port}`), 500);
+    }
+  });
+}).catch((err) => {
+  console.error('[index] Failed to bind a port:', err.message);
+  process.exit(1);
 });
 
 // Graceful shutdown

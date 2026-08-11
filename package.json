@@ -8,7 +8,8 @@
   },
   "scripts": {
     "start": "node bin/nomacode.js",
-    "dev": "node bin/nomacode.js --port 3000"
+    "dev": "node bin/nomacode.js --port 3000",
+    "test:android": "node scripts/test-android.js"
   },
   "keywords": [
     "termux",

@@ -7,6 +7,15 @@ function setupWebSocket(server) {
   const wss = new WebSocket.Server({ server });
   wssInstance = wss;
 
+  // The WebSocketServer re-emits the underlying http server's 'error' (e.g.
+  // EADDRINUSE from index.js's listen retry loop). Without a listener here
+  // that re-emission is an unhandled 'error' and kills the process.
+  wss.on('error', (err) => {
+    if (err.code !== 'EADDRINUSE') {
+      console.error('[websocket] Server error:', err.message);
+    }
+  });
+
   wss.on('connection', (ws) => {
     let attachedSessionId = null;
 
