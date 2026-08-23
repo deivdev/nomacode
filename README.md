@@ -59,6 +59,12 @@ Or just tap the Nomacode icon on your home screen.
 
 ## Roadmap
 
+### Desktop agents from the phone (no inbound)
+
+Nomacode runs the agent **on the phone**. To spectate a **desktop** coding
+agent without SSH or publishing a port, see [Build Remote Agent](docs/gbr.md)
+(`gbr-agent pair` / `run`). Companion pairing device, not a Nomacode replacement.
+
 ### iOS Support
 
 Currently Nomacode requires Termux, which is Android-only. iOS implementation ideas welcome:
